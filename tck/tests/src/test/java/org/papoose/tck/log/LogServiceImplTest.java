@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.ops4j.pax.exam.CoreOptions.equinox;
@@ -50,6 +51,7 @@ import org.osgi.service.log.LogListener;
 import org.osgi.service.log.LogReaderService;
 import org.osgi.service.log.LogService;
 
+import org.papoose.log.LogReaderServiceFactory;
 import org.papoose.log.LogServiceImpl;
 
 
@@ -78,7 +80,7 @@ public class LogServiceImplTest
                 // will not be triggered till the framework is not started
                 // waitForFrameworkStartup()
                 provision(
-                        mavenBundle().groupId("org.papoose.cmpn").artifactId("papoose-cmpn-log").version(asInProject())
+                        mavenBundle().groupId("org.papoose.cmpn").artifactId("papoose-log").version(asInProject())
                 )
         );
     }
@@ -86,7 +88,7 @@ public class LogServiceImplTest
     @Test
     public void test() throws Exception
     {
-        Assert.assertNotNull(bundleContext);
+        assertNotNull(bundleContext);
         ExecutorService executor = new ThreadPoolExecutor(1, 5, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 
         LogServiceImpl logServiceImpl = new LogServiceImpl(bundleContext, executor);
@@ -94,14 +96,18 @@ public class LogServiceImplTest
 
         logServiceImpl.start();
 
-        bundleContext.registerService(new String[]{ LogService.class.getName(), LogReaderService.class.getName() }, logServiceImpl, null);
+        bundleContext.registerService(LogService.class.getName(), logServiceImpl, null);
+        bundleContext.registerService(LogReaderService.class.getName(), new LogReaderServiceFactory(logServiceImpl), null);
 
         try
         {
             ServiceReference sr = bundleContext.getServiceReference(LogService.class.getName());
             LogService logService = (LogService) bundleContext.getService(sr);
+            assertNotNull(logService);
+
             sr = bundleContext.getServiceReference(LogReaderService.class.getName());
             LogReaderService logReaderService = (LogReaderService) bundleContext.getService(sr);
+            assertNotNull(logReaderService);
 
             final int NUM_LISTENERS = 100;
             final int NUM_MESSAGES = 1000;

@@ -34,8 +34,10 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.ServiceEvent;
+import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.event.Event;
 import org.osgi.service.log.LogEntry;
 import org.osgi.service.log.LogListener;
@@ -50,7 +52,7 @@ import org.papoose.log.util.SerialExecutor;
 /**
  * @version $Revision: $ $Date: $
  */
-public class LogServiceImpl implements LogService, LogReaderService, BundleListener, ServiceListener, FrameworkListener
+public class LogServiceImpl implements LogService, BundleListener, ServiceListener, FrameworkListener
 {
     private final static String CLASS_NAME = LogServiceImpl.class.getName();
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
@@ -175,7 +177,7 @@ public class LogServiceImpl implements LogService, LogReaderService, BundleListe
     /**
      * {@inheritDoc}
      */
-    public void addLogListener(LogListener listener)
+    void addLogListener(LogListener listener)
     {
         LOGGER.entering(CLASS_NAME, "addLogListener", listener);
 
@@ -187,7 +189,7 @@ public class LogServiceImpl implements LogService, LogReaderService, BundleListe
     /**
      * {@inheritDoc}
      */
-    public void removeLogListener(LogListener listener)
+    void removeLogListener(LogListener listener)
     {
         LOGGER.entering(CLASS_NAME, "removeLogListener", listener);
 
@@ -199,7 +201,7 @@ public class LogServiceImpl implements LogService, LogReaderService, BundleListe
     /**
      * {@inheritDoc}
      */
-    public Enumeration getLog()
+    Enumeration getLog()
     {
         LOGGER.entering(CLASS_NAME, "getLog");
 
