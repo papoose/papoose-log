@@ -43,7 +43,7 @@ public class Activator implements BundleActivator
         {
             public void logged(LogEntry entry)
             {
-                share.put("LOG", entry);
+                if ("TEST".equals(entry.getMessage())) share.put("LOG", entry);
             }
         });
     }

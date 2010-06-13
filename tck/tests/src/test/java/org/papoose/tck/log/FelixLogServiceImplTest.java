@@ -16,9 +16,7 @@
  */
 package org.papoose.tck.log;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.ops4j.pax.exam.CoreOptions.equinox;
 import static org.ops4j.pax.exam.CoreOptions.felix;
@@ -39,16 +37,13 @@ import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 @RunWith(JUnit4TestRunner.class)
 public class FelixLogServiceImplTest extends BaseLogServiceImplTest
 {
-
     @Configuration
     public static Option[] configure()
     {
         return options(
                 equinox(),
                 felix(),
-                knopflerfish(),
                 // papoose(),
-                compendiumProfile(),
                 // vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
                 // this is necessary to let junit runner not timeout the remote process before attaching debugger
                 // setting timeout to 0 means wait as long as the remote service comes available.
@@ -56,8 +51,14 @@ public class FelixLogServiceImplTest extends BaseLogServiceImplTest
                 // will not be triggered till the framework is not started
                 // waitForFrameworkStartup()
                 provision(
-                        mavenBundle().groupId("org.eclipse.equinox").artifactId("log").version(asInProject())
+                        mavenBundle().groupId("org.apache.felix").artifactId("org.apache.felix.log").version(asInProject())
                 )
         );
+    }
+
+    @Test
+    public void test() throws Exception
+    {
+        // https://issues.apache.org/jira/browse/FELIX-2406
     }
 }

@@ -16,9 +16,13 @@
  */
 package org.papoose.tck.log;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.Before;
 import org.junit.runner.RunWith;
 import static org.ops4j.pax.exam.CoreOptions.equinox;
 import static org.ops4j.pax.exam.CoreOptions.felix;
@@ -28,9 +32,14 @@ import static org.ops4j.pax.exam.CoreOptions.options;
 import static org.ops4j.pax.exam.CoreOptions.provision;
 import static org.ops4j.pax.exam.MavenUtils.asInProject;
 import org.ops4j.pax.exam.Option;
-import static org.ops4j.pax.exam.container.def.PaxRunnerOptions.compendiumProfile;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.log.LogReaderService;
+import org.osgi.service.log.LogService;
+
+import org.papoose.log.LogReaderServiceImpl;
+import org.papoose.log.LogServiceImpl;
 
 
 /**
@@ -39,6 +48,10 @@ import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 @RunWith(JUnit4TestRunner.class)
 public class PapooseLogServiceImplTest extends BaseLogServiceImplTest
 {
+    private ExecutorService executor;
+    private LogServiceImpl logServiceImpl;
+    private ServiceRegistration logServiceReference;
+    private ServiceRegistration logReaderServiceReference;
 
     @Configuration
     public static Option[] configure()
@@ -48,7 +61,6 @@ public class PapooseLogServiceImplTest extends BaseLogServiceImplTest
                 felix(),
                 knopflerfish(),
                 // papoose(),
-                compendiumProfile(),
                 // vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
                 // this is necessary to let junit runner not timeout the remote process before attaching debugger
                 // setting timeout to 0 means wait as long as the remote service comes available.
@@ -56,8 +68,32 @@ public class PapooseLogServiceImplTest extends BaseLogServiceImplTest
                 // will not be triggered till the framework is not started
                 // waitForFrameworkStartup()
                 provision(
-                        mavenBundle().groupId("org.eclipse.equinox").artifactId("log").version(asInProject())
+                        mavenBundle().groupId("org.papoose.cmpn").artifactId("papoose-log").version(asInProject())
                 )
         );
+    }
+
+    @Before
+    public void before()
+    {
+        executor = new ThreadPoolExecutor(1, 5, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+
+        logServiceImpl = new LogServiceImpl(bundleContext, executor);
+        logServiceImpl.setLimit(100);
+
+        logServiceImpl.start();
+
+        logServiceReference = bundleContext.registerService(LogService.class.getName(), logServiceImpl, null);
+        logReaderServiceReference = bundleContext.registerService(LogReaderService.class.getName(), new LogReaderServiceImpl(logServiceImpl), null);
+    }
+
+    @After
+    public void after()
+    {
+        logReaderServiceReference.unregister();
+        logServiceReference.unregister();
+
+        logServiceImpl.stop();
+        executor.shutdown();
     }
 }
