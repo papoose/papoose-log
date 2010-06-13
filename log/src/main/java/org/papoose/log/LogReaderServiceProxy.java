@@ -28,15 +28,17 @@ import org.osgi.service.log.LogReaderService;
 /**
  * @version $Revision: $ $Date: $
  */
-public class LogReaderServiceProxy implements LogReaderService
+class LogReaderServiceProxy implements LogReaderService
 {
     private final static String CLASS_NAME = LogReaderServiceProxy.class.getName();
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
     private final LogServiceImpl logService;
     private final Set<LogListener> listeners = new CopyOnWriteArraySet<LogListener>();
 
-    public LogReaderServiceProxy(LogServiceImpl logService)
+    LogReaderServiceProxy(LogServiceImpl logService)
     {
+        assert logService != null;
+
         this.logService = logService;
     }
 

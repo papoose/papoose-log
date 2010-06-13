@@ -22,8 +22,8 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.service.log.LogEntry;
 import org.osgi.service.log.LogListener;
 import org.osgi.service.log.LogReaderService;
-import org.osgi.util.tracker.ServiceTracker;
-import org.osgi.util.tracker.ServiceTrackerCustomizer;
+
+import org.papoose.test.bundles.share.Share;
 
 
 /**
@@ -31,35 +31,21 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  */
 public class Activator implements BundleActivator
 {
-
     public void start(final BundleContext context) throws Exception
     {
-        ServiceTracker tracker = new ServiceTracker(context, LogReaderService.class.getName(), new ServiceTrackerCustomizer()
+        ServiceReference shareReference = context.getServiceReference(Share.class.getName());
+        final Share share = (Share) context.getService(shareReference);
+
+        ServiceReference logReference = context.getServiceReference(LogReaderService.class.getName());
+        LogReaderService logReader = (LogReaderService) context.getService(logReference);
+
+        logReader.addLogListener(new LogListener()
         {
-            public Object addingService(ServiceReference reference)
+            public void logged(LogEntry entry)
             {
-                LogReaderService service = (LogReaderService) context.getService(reference);
-
-                service.addLogListener(new LogListener()
-                {
-                    public void logged(LogEntry entry)
-                    {
-                        //Todo change body of implemented methods use File | Settings | File Templates.
-                    }
-                });
-
-                return service;
-            }
-
-            public void modifiedService(ServiceReference reference, Object service)
-            {
-            }
-
-            public void removedService(ServiceReference reference, Object service)
-            {
+                share.put("LOG", entry);
             }
         });
-        tracker.open(true);
     }
 
     public void stop(BundleContext context) throws Exception

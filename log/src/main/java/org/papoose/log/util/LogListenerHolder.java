@@ -34,6 +34,9 @@ public final class LogListenerHolder
 
     public LogListenerHolder(LogListener listener, SerialExecutor executor)
     {
+        assert listener != null;
+        assert executor != null;
+
         this.listener = listener;
         this.executor = executor;
     }

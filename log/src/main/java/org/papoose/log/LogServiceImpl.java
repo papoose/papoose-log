@@ -43,7 +43,6 @@ import org.osgi.service.log.LogEntry;
 import org.osgi.service.log.LogListener;
 import org.osgi.service.log.LogReaderService;
 import org.osgi.service.log.LogService;
-
 import org.papoose.log.util.EventAdminTracker;
 import org.papoose.log.util.LogListenerHolder;
 import org.papoose.log.util.SerialExecutor;
@@ -81,18 +80,6 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
     }
 
     /**
-     * The number of log entries kept in ths log service is not unbounded.  Use
-     * this method to obtain the maximum number of log entries kept in the log
-     * service.
-     *
-     * @return the maximum number of log entries kept in the log service
-     */
-    public int getLimit()
-    {
-        return limit;
-    }
-
-    /**
      * Use this method to set the maximum number of log entries kept in the
      * log service.
      *
@@ -125,7 +112,7 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
      */
     public void log(int level, String message)
     {
-        LOGGER.entering(CLASS_NAME, "log", new Object[]{ level, message });
+        LOGGER.entering(CLASS_NAME, "log", new Object[]{level, message});
 
         log(level, message, null);
 
@@ -137,7 +124,7 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
      */
     public void log(int level, String message, Throwable exception)
     {
-        LOGGER.entering(CLASS_NAME, "log", new Object[]{ level, message, exception });
+        LOGGER.entering(CLASS_NAME, "log", new Object[]{level, message, exception});
 
         LogEntryImpl entry = new LogEntryImpl(null, null, level, message, exception);
 
@@ -152,7 +139,7 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
      */
     public void log(ServiceReference sr, int level, String message)
     {
-        LOGGER.entering(CLASS_NAME, "log", new Object[]{ sr, level, message });
+        LOGGER.entering(CLASS_NAME, "log", new Object[]{sr, level, message});
 
         log(sr, level, message, null);
 
@@ -164,7 +151,7 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
      */
     public void log(ServiceReference sr, int level, String message, Throwable exception)
     {
-        LOGGER.entering(CLASS_NAME, "log", new Object[]{ sr, level, message, exception });
+        LOGGER.entering(CLASS_NAME, "log", new Object[]{sr, level, message, exception});
 
         LogEntryImpl entry = new LogEntryImpl(sr.getBundle(), sr, level, message, exception);
 
@@ -181,6 +168,7 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
     {
         LOGGER.entering(CLASS_NAME, "addLogListener", listener);
 
+        if (listener == null) return;
         listeners.add(new LogListenerHolder(listener, new SerialExecutor(executorService)));
 
         LOGGER.exiting(CLASS_NAME, "addLogListener");
@@ -193,6 +181,7 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
     {
         LOGGER.entering(CLASS_NAME, "removeLogListener", listener);
 
+        if (listener == null) return;
         listeners.remove(new LogListenerHolder(listener));
 
         LOGGER.exiting(CLASS_NAME, "removeLogListener");
@@ -227,7 +216,6 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
             return enumeration;
         }
     }
-
 
     /**
      * {@inheritDoc}
@@ -268,7 +256,7 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
                 break;
         }
 
-        insert(new LogEntryImpl(event.getBundle(), null, LOG_INFO, message, null));
+        insert(new LogEntryImpl(event.getBundle(), null, LogService.LOG_INFO, message, null));
 
         LOGGER.exiting(CLASS_NAME, "bundleChanged");
     }
@@ -299,7 +287,7 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
 
         ServiceReference reference = event.getServiceReference();
 
-        insert(new LogEntryImpl(reference.getBundle(), reference, type == ServiceEvent.MODIFIED ? LOG_DEBUG : LOG_INFO, message, null));
+        insert(new LogEntryImpl(reference.getBundle(), reference, type == ServiceEvent.MODIFIED ? LogService.LOG_DEBUG : LogService.LOG_INFO, message, null));
 
         LOGGER.exiting(CLASS_NAME, "serviceChanged");
     }
@@ -340,7 +328,7 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
                 break;
         }
 
-        insert(new LogEntryImpl(event.getBundle(), null, type == FrameworkEvent.ERROR ? LOG_ERROR : LOG_INFO, message, event.getThrowable()));
+        insert(new LogEntryImpl(event.getBundle(), null, type == FrameworkEvent.ERROR ? LogService.LOG_ERROR : LogService.LOG_INFO, message, event.getThrowable()));
 
         LOGGER.exiting(CLASS_NAME, "frameworkEvent");
     }
@@ -410,22 +398,28 @@ public class LogServiceImpl implements LogService, BundleListener, ServiceListen
     {
         LOGGER.entering(CLASS_NAME, "broadcast", entry);
 
+        if (eventAdmin.size() > 0)
+        {
+            LOGGER.exiting(CLASS_NAME, "broadcast");
+            return;
+        }
+
         String code;
         switch (entry.getLevel())
         {
-            case LOG_ERROR:
+            case LogService.LOG_ERROR:
                 code = "ERROR";
                 break;
 
-            case LOG_WARNING:
+            case LogService.LOG_WARNING:
                 code = "WARNING";
                 break;
 
-            case LOG_INFO:
+            case LogService.LOG_INFO:
                 code = "INFO";
                 break;
 
-            case LOG_DEBUG:
+            case LogService.LOG_DEBUG:
                 code = "DEBUG";
                 break;
 

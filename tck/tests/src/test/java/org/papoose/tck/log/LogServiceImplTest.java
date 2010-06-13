@@ -16,7 +16,14 @@
  */
 package org.papoose.tck.log;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -26,10 +33,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
+import org.junit.After;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.ops4j.pax.exam.CoreOptions.equinox;
@@ -44,15 +53,17 @@ import org.ops4j.pax.exam.Option;
 import static org.ops4j.pax.exam.container.def.PaxRunnerOptions.compendiumProfile;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.log.LogEntry;
 import org.osgi.service.log.LogListener;
 import org.osgi.service.log.LogReaderService;
 import org.osgi.service.log.LogService;
-
-import org.papoose.log.LogReaderServiceFactory;
+import org.papoose.log.LogReaderServiceImpl;
 import org.papoose.log.LogServiceImpl;
+import org.papoose.test.bundles.share.Share;
+import org.papoose.test.bundles.share.ShareListener;
 
 
 /**
@@ -62,7 +73,9 @@ import org.papoose.log.LogServiceImpl;
 public class LogServiceImplTest
 {
     @Inject
-    private BundleContext bundleContext = null;
+    protected BundleContext bundleContext = null;
+    protected ServiceReference shareReference;
+    protected Share share;
 
     @Configuration
     public static Option[] configure()
@@ -80,7 +93,9 @@ public class LogServiceImplTest
                 // will not be triggered till the framework is not started
                 // waitForFrameworkStartup()
                 provision(
-                        mavenBundle().groupId("org.papoose.cmpn").artifactId("papoose-log").version(asInProject())
+                        mavenBundle().groupId("org.papoose.cmpn").artifactId("papoose-log").version(asInProject()),
+                        mavenBundle().groupId("org.papoose.cmpn.tck.bundles").artifactId("bundle").version(asInProject()).start(false),
+                        mavenBundle().groupId("org.papoose.test.bundles").artifactId("test-share").version(asInProject())
                 )
         );
     }
@@ -97,16 +112,16 @@ public class LogServiceImplTest
         logServiceImpl.start();
 
         bundleContext.registerService(LogService.class.getName(), logServiceImpl, null);
-        bundleContext.registerService(LogReaderService.class.getName(), new LogReaderServiceFactory(logServiceImpl), null);
+        bundleContext.registerService(LogReaderService.class.getName(), new LogReaderServiceImpl(logServiceImpl), null);
 
         try
         {
             ServiceReference sr = bundleContext.getServiceReference(LogService.class.getName());
-            LogService logService = (LogService) bundleContext.getService(sr);
+            LogService logService = (LogService)bundleContext.getService(sr);
             assertNotNull(logService);
 
             sr = bundleContext.getServiceReference(LogReaderService.class.getName());
-            LogReaderService logReaderService = (LogReaderService) bundleContext.getService(sr);
+            LogReaderService logReaderService = (LogReaderService)bundleContext.getService(sr);
             assertNotNull(logReaderService);
 
             final int NUM_LISTENERS = 100;
@@ -148,7 +163,7 @@ public class LogServiceImplTest
             Enumeration enumeration = logReaderService.getLog();
             for (int i = 0; i < 100; i++)
             {
-                LogEntry logEntry = (LogEntry) enumeration.nextElement();
+                LogEntry logEntry = (LogEntry)enumeration.nextElement();
                 assertEquals("Test" + (999 - i), logEntry.getMessage());
             }
 
@@ -173,5 +188,91 @@ public class LogServiceImplTest
             logServiceImpl.stop();
             executor.shutdown();
         }
+    }
+
+    @Test
+    public void testBundleUnregsiter() throws Exception
+    {
+        assertNotNull(bundleContext);
+        ExecutorService executor = new ThreadPoolExecutor(1, 5, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+
+        LogServiceImpl logServiceImpl = new LogServiceImpl(bundleContext, executor);
+        logServiceImpl.setLimit(100);
+
+        logServiceImpl.start();
+
+        bundleContext.registerService(LogService.class.getName(), logServiceImpl, null);
+        bundleContext.registerService(LogReaderService.class.getName(), new LogReaderServiceImpl(logServiceImpl), null);
+
+        try
+        {
+            final Map<String, Object> state = new HashMap<String, Object>();
+            share.addListener(new ShareListener()
+            {
+                public void get(String key, Object value)
+                {
+                }
+
+                public void put(String key, Object value)
+                {
+                    state.put(key, value);
+                }
+
+                public void clear()
+                {
+                }
+            });
+            Bundle test = null;
+            for (Bundle b : bundleContext.getBundles())
+            {
+                if ("org.papoose.cmpn.tck.bundle".equals(b.getSymbolicName()))
+                {
+                    test = b;
+                    break;
+                }
+            }
+
+            assertNotNull(test);
+
+            test.start();
+
+            ServiceReference sr = bundleContext.getServiceReference(LogService.class.getName());
+            LogService logService = (LogService)bundleContext.getService(sr);
+            assertNotNull(logService);
+
+            logService.log(LogService.LOG_INFO, "TEST");
+
+            LogEntry logEntry = (LogEntry) state.get("LOG");
+            assertNotNull(logEntry);
+            assertEquals("TEST", logEntry.getMessage());
+
+            state.clear();
+            test.stop();
+            test.uninstall();
+
+            logService.log(LogService.LOG_INFO, "STOPPED");
+
+            assertEquals(null, state.get("STOPPED"));
+        }
+        finally
+        {
+            logServiceImpl.stop();
+            executor.shutdown();
+        }
+    }
+
+    @Before
+    public void before()
+    {
+        shareReference = bundleContext.getServiceReference(Share.class.getName());
+        share = (Share) bundleContext.getService(shareReference);
+    }
+
+    @After
+    public void after()
+    {
+        bundleContext.ungetService(shareReference);
+        shareReference = null;
+        share = null;
     }
 }

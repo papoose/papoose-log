@@ -35,6 +35,8 @@ class LogEntryImpl implements LogEntry
 
     LogEntryImpl(Bundle bundle, ServiceReference serviceReference, int level, String message, Throwable exception)
     {
+        assert level > 0;
+
         this.bundle = bundle;
         this.serviceReference = serviceReference;
         this.level = level;

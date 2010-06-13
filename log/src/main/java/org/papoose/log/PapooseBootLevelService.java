@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.log.LogReaderService;
 import org.osgi.service.log.LogService;
 import org.papoose.core.Papoose;
 import org.papoose.log.util.Util;
@@ -43,7 +44,8 @@ public class PapooseBootLevelService
     public final static String LOG_SERVICE_TIME_UNIT = CLASS_NAME + ".timeUnit";
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
     private volatile LogServiceImpl logService;
-    private volatile ServiceRegistration registration;
+    private volatile ServiceRegistration logServiceRegistration;
+    private volatile ServiceRegistration logReaderServiceRegistration;
 
     public void start(Papoose papoose)
     {
@@ -90,7 +92,8 @@ public class PapooseBootLevelService
 
         logService.start();
 
-        registration = bundleContext.registerService(LogService.class.getName(), logService, null);
+        logServiceRegistration = bundleContext.registerService(LogService.class.getName(), logService, null);
+        logReaderServiceRegistration = bundleContext.registerService(LogReaderService.class.getName(), new LogReaderServiceImpl(logService), null);
 
         LOGGER.exiting(CLASS_NAME, "start");
     }
@@ -105,8 +108,10 @@ public class PapooseBootLevelService
             return;
         }
 
-        registration.unregister();
-        registration = null;
+        logServiceRegistration.unregister();
+        logServiceRegistration = null;
+        logReaderServiceRegistration.unregister();
+        logReaderServiceRegistration = null;
 
         logService.stop();
         logService = null;
