@@ -26,25 +26,36 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * @version $Revision: $ $Date: $
  */
-public class LogReaderServiceFactory implements ServiceFactory
+public class LogReaderServiceImpl implements ServiceFactory
 {
-    private final static String CLASS_NAME = LogReaderServiceFactory.class.getName();
+    private final static String CLASS_NAME = LogReaderServiceImpl.class.getName();
     private final static Logger LOGGER = Logger.getLogger(CLASS_NAME);
     private final LogServiceImpl logService;
 
-    public LogReaderServiceFactory(LogServiceImpl logService)
+    public LogReaderServiceImpl(LogServiceImpl logService)
     {
+        if (logService == null) throw new IllegalArgumentException("LogService cannot be null");
         this.logService = logService;
     }
 
     public Object getService(Bundle bundle, ServiceRegistration registration)
     {
-        return new LogReaderServiceProxy(logService);
+        LOGGER.entering(CLASS_NAME, "getService", new Object[]{ bundle, registration });
+
+        Object service = new LogReaderServiceProxy(logService);
+
+        LOGGER.exiting(CLASS_NAME, "getService", service);
+
+        return service;
     }
 
     public void ungetService(Bundle bundle, ServiceRegistration registration, Object service)
     {
-        ((LogReaderServiceProxy)service).unregister();
+        LOGGER.entering(CLASS_NAME, "ungetService", new Object[]{ bundle, registration, service });
+
+        ((LogReaderServiceProxy) service).unregister();
+
+        LOGGER.exiting(CLASS_NAME, "ungetService");
     }
 
 }
