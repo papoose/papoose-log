@@ -16,11 +16,6 @@
  */
 package org.papoose.tck.log;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -70,7 +65,7 @@ import org.papoose.test.bundles.share.ShareListener;
  * @version $Revision: $ $Date: $
  */
 @RunWith(JUnit4TestRunner.class)
-public class LogServiceImplTest
+public class EquinoxLogServiceImplTest
 {
     @Inject
     protected BundleContext bundleContext = null;
