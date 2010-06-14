@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.papoose.cmpn</groupId>
     <artifactId>papoose-log</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>bundle</packaging>
     <name>Papoose :: Log Service</name>
     <description>OSGi Log Service</description>
