@@ -16,3 +16,4 @@ receive Log Entry objects as they are logged by other bundles.
 *  Discuss Papoose at [http://groups.google.com/group/papoose-r4](http://groups.google.com/group/papoose-r4)
 *  Learn even more at [http://www.papoose-r4.org](http://www.papoose-r4.org)
 *  Check out code at [http://github.com/maguro/papoose-log](http://github.com/maguro/papoose-log)
+
